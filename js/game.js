@@ -15,29 +15,48 @@ class TrafficLightRacer {
         this.maxPenalties = 3;
         this.timeLeft = 60;
         this.gameSpeed = 2;
-        this.carSpeed = 0;
-        this.maxCarSpeed = 8;
+        this.carSpeed = 3; // Start with some speed
+        this.maxCarSpeed = 12;
+        this.autoAcceleration = 0.02; // Automatic acceleration rate
 
         // Traffic light states
-        this.trafficLight = 'red'; // 'red', 'yellow', 'green'
+        this.trafficLight = 'green'; // Start with green
         this.lightTimer = 0;
-        this.lightDuration = 3000; // 3 seconds per light
-        this.lightCycle = ['red', 'green', 'yellow'];
+        this.lightDuration = () => 2000 + Math.random() * 4000; // Random 2-6 seconds
+        this.nextLightChange = this.lightDuration();
+        this.lightCycle = ['green', 'yellow', 'red'];
         this.currentLightIndex = 0;
+
+        // Lane system (3 lanes)
+        this.numLanes = 3;
+        this.laneWidth = 90;
+        this.currentLane = 1; // Start in middle lane (0, 1, 2)
+        this.targetLane = 1;
+        this.laneChangeSpeed = 0.15;
+        this.isChangingLanes = false;
 
         // Car properties
         this.car = {
             x: 0,
             y: 0,
-            width: 40,
-            height: 60,
+            width: 35,
+            height: 55,
             color: '#3B82F6' // Blue car
         };
 
         // Road properties
         this.roadLines = [];
-        this.roadWidth = 300;
+        this.roadWidth = this.numLanes * this.laneWidth;
         this.lineOffset = 0;
+
+        // Obstacles
+        this.obstacles = [];
+        this.obstacleSpawnRate = 0.02; // Probability per frame
+        this.obstacleTypes = [
+            { type: 'car', color: '#EF4444', width: 35, height: 55 },
+            { type: 'truck', color: '#F59E0B', width: 40, height: 70 },
+            { type: 'construction', color: '#F97316', width: 30, height: 40 }
+        ];
 
         // Animation properties
         this.lastTime = 0;
@@ -100,8 +119,19 @@ class TrafficLightRacer {
     }
 
     updateCarPosition() {
-        this.car.x = (this.canvas.width - this.car.width) / 2;
+        // Calculate lane positions
+        const centerX = this.canvas.width / 2;
+        const roadStart = centerX - this.roadWidth / 2;
+        const laneCenter = roadStart + (this.currentLane + 0.5) * this.laneWidth;
+        
+        this.car.x = laneCenter - this.car.width / 2;
         this.car.y = this.canvas.height - this.car.height - 50;
+    }
+
+    getLaneCenter(laneIndex) {
+        const centerX = this.canvas.width / 2;
+        const roadStart = centerX - this.roadWidth / 2;
+        return roadStart + (laneIndex + 0.5) * this.laneWidth;
     }
 
     initRoadLines() {
@@ -140,25 +170,67 @@ class TrafficLightRacer {
         if (this.gameState !== 'playing') return;
 
         const key = e.key.toLowerCase();
+        
+        // Lane changing
+        if (key === 'arrowleft' || key === 'a') {
+            e.preventDefault();
+            this.changeLane(-1); // Move left
+        } else if (key === 'arrowright' || key === 'd') {
+            e.preventDefault();
+            this.changeLane(1); // Move right
+        }
+        
+        // Speed control
         if (key === 'arrowup' || key === 'w') {
             e.preventDefault();
             this.accelerate();
+        } else if (key === 'arrowdown' || key === 's') {
+            e.preventDefault();
+            this.brake();
+        }
+    }
+
+    changeLane(direction) {
+        if (this.isChangingLanes) return;
+        
+        const newLane = this.targetLane + direction;
+        if (newLane >= 0 && newLane < this.numLanes) {
+            this.targetLane = newLane;
+            this.isChangingLanes = true;
+        }
+    }
+
+    updateLanePosition() {
+        if (this.isChangingLanes) {
+            const diff = this.targetLane - this.currentLane;
+            if (Math.abs(diff) > 0.05) {
+                this.currentLane += diff * this.laneChangeSpeed;
+            } else {
+                this.currentLane = this.targetLane;
+                this.isChangingLanes = false;
+            }
+            this.updateCarPosition();
         }
     }
 
     accelerate() {
+        // Only allow acceleration on green light
         if (this.trafficLight === 'green') {
-            // Legal acceleration
-            this.carSpeed = Math.min(this.carSpeed + 1, this.maxCarSpeed);
+            this.carSpeed = Math.min(this.carSpeed + 0.5, this.maxCarSpeed);
         } else {
-            // Penalty for moving on red/yellow
+            // Penalty for accelerating on red/yellow
             this.triggerPenalty();
         }
     }
 
+    brake() {
+        // Always allow braking
+        this.carSpeed = Math.max(this.carSpeed - 1, 0);
+    }
+
     triggerPenalty() {
         this.penalties++;
-        this.carSpeed = Math.max(this.carSpeed - 2, 0); // Speed penalty
+        this.carSpeed = Math.max(this.carSpeed - 3, 0); // Bigger speed penalty
         
         // Visual feedback
         this.showPenaltyFlash();
@@ -199,10 +271,18 @@ class TrafficLightRacer {
     updateTrafficLight(deltaTime) {
         this.lightTimer += deltaTime;
         
-        if (this.lightTimer >= this.lightDuration) {
+        if (this.lightTimer >= this.nextLightChange) {
             this.lightTimer = 0;
             this.currentLightIndex = (this.currentLightIndex + 1) % this.lightCycle.length;
             this.trafficLight = this.lightCycle[this.currentLightIndex];
+            
+            // Set random duration for next light change
+            this.nextLightChange = this.lightDuration();
+            
+            // Check for penalty if car is speeding during red/yellow
+            if ((this.trafficLight === 'red' || this.trafficLight === 'yellow') && this.carSpeed > 2) {
+                this.triggerPenalty();
+            }
             
             // Update HUD traffic light
             this.updateTrafficLightHUD();
@@ -239,12 +319,26 @@ class TrafficLightRacer {
         // Update traffic light
         this.updateTrafficLight(deltaTime);
 
+        // Automatic acceleration when light is green
+        if (this.trafficLight === 'green') {
+            this.carSpeed = Math.min(this.carSpeed + this.autoAcceleration, this.maxCarSpeed);
+        }
+
+        // Update lane position
+        this.updateLanePosition();
+
+        // Update obstacles
+        this.updateObstacles(deltaTime);
+
+        // Spawn new obstacles
+        this.spawnObstacles();
+
+        // Check collisions
+        this.checkCollisions();
+
         // Update car movement and distance
         this.distance += this.carSpeed * (deltaTime / 16.67); // Normalize to 60fps
         
-        // Natural speed decay
-        this.carSpeed = Math.max(this.carSpeed - 0.05, 0);
-
         // Update road animation
         this.lineOffset += (this.gameSpeed + this.carSpeed) * (deltaTime / 16.67);
         if (this.lineOffset >= 60) {
@@ -262,6 +356,95 @@ class TrafficLightRacer {
         document.getElementById('timer').textContent = Math.ceil(Math.max(0, this.timeLeft));
     }
 
+    spawnObstacles() {
+        if (Math.random() < this.obstacleSpawnRate) {
+            const obstacleType = this.obstacleTypes[Math.floor(Math.random() * this.obstacleTypes.length)];
+            const lane = Math.floor(Math.random() * this.numLanes);
+            
+            // Don't spawn in player's current lane if they're close
+            if (Math.abs(lane - this.currentLane) < 0.5) return;
+            
+            const obstacle = {
+                ...obstacleType,
+                lane: lane,
+                x: this.getLaneCenter(lane) - obstacleType.width / 2,
+                y: -obstacleType.height,
+                speed: 1 + Math.random() * 2
+            };
+            
+            this.obstacles.push(obstacle);
+        }
+    }
+
+    updateObstacles(deltaTime) {
+        for (let i = this.obstacles.length - 1; i >= 0; i--) {
+            const obstacle = this.obstacles[i];
+            obstacle.y += (this.gameSpeed + this.carSpeed + obstacle.speed) * (deltaTime / 16.67);
+            
+            // Remove obstacles that are off-screen
+            if (obstacle.y > this.canvas.height + 100) {
+                this.obstacles.splice(i, 1);
+            }
+        }
+    }
+
+    checkCollisions() {
+        const carBounds = {
+            left: this.car.x + 5,
+            right: this.car.x + this.car.width - 5,
+            top: this.car.y + 5,
+            bottom: this.car.y + this.car.height - 5
+        };
+
+        for (let obstacle of this.obstacles) {
+            const obstacleBounds = {
+                left: obstacle.x,
+                right: obstacle.x + obstacle.width,
+                top: obstacle.y,
+                bottom: obstacle.y + obstacle.height
+            };
+
+            if (carBounds.left < obstacleBounds.right &&
+                carBounds.right > obstacleBounds.left &&
+                carBounds.top < obstacleBounds.bottom &&
+                carBounds.bottom > obstacleBounds.top) {
+                
+                this.handleCollision(obstacle);
+                break;
+            }
+        }
+    }
+
+    handleCollision(obstacle) {
+        // Different penalties based on obstacle type
+        if (obstacle.type === 'construction') {
+            this.penalties += 2;
+            this.carSpeed = Math.max(this.carSpeed - 4, 0);
+        } else {
+            this.penalties += 1;
+            this.carSpeed = Math.max(this.carSpeed - 2, 0);
+        }
+
+        // Visual and audio feedback
+        this.showPenaltyFlash();
+        this.shakeCanvas();
+        this.playPenaltySound();
+
+        // Update UI
+        document.getElementById('penalties').textContent = this.penalties;
+
+        // Check game over
+        if (this.penalties >= this.maxPenalties) {
+            this.endGame('Too many collisions!');
+        }
+
+        // Remove the obstacle
+        const index = this.obstacles.indexOf(obstacle);
+        if (index > -1) {
+            this.obstacles.splice(index, 1);
+        }
+    }
+
     draw() {
         // Clear canvas
         this.ctx.fillStyle = '#1F2937'; // Dark gray background
@@ -269,6 +452,9 @@ class TrafficLightRacer {
 
         // Draw road
         this.drawRoad();
+
+        // Draw obstacles
+        this.drawObstacles();
 
         // Draw traffic light on canvas
         this.drawTrafficLight();
@@ -290,18 +476,69 @@ class TrafficLightRacer {
         this.ctx.fillRect(centerX - roadHalfWidth - 4, 0, 4, this.canvas.height);
         this.ctx.fillRect(centerX + roadHalfWidth, 0, 4, this.canvas.height);
 
-        // Draw center line (dashed)
+        // Draw lane dividers
         this.ctx.fillStyle = '#FFFFFF';
+        for (let i = 1; i < this.numLanes; i++) {
+            const laneX = centerX - roadHalfWidth + i * this.laneWidth;
+            
+            // Dashed lines for lane dividers
+            for (let j = 0; j < this.roadLines.length; j++) {
+                const line = this.roadLines[j];
+                const y = (line.y + this.lineOffset) % (this.canvas.height + 60);
+                this.ctx.fillRect(laneX - 1, y, 2, 30);
+            }
+        }
+
+        // Draw center line for middle lane
+        const centerLaneX = centerX;
         for (let i = 0; i < this.roadLines.length; i++) {
             const line = this.roadLines[i];
             const y = (line.y + this.lineOffset) % (this.canvas.height + 60);
-            this.ctx.fillRect(centerX - 2, y, 4, 30);
+            this.ctx.fillRect(centerLaneX - 2, y, 4, 30);
         }
 
         // Draw sidewalks
         this.ctx.fillStyle = '#6B7280';
         this.ctx.fillRect(0, 0, centerX - roadHalfWidth - 4, this.canvas.height);
         this.ctx.fillRect(centerX + roadHalfWidth + 4, 0, this.canvas.width - (centerX + roadHalfWidth + 4), this.canvas.height);
+    }
+
+    drawObstacles() {
+        for (let obstacle of this.obstacles) {
+            this.ctx.fillStyle = obstacle.color;
+            this.ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            
+            // Add details based on obstacle type
+            if (obstacle.type === 'car') {
+                // Car windows
+                this.ctx.fillStyle = '#1E293B';
+                this.ctx.fillRect(obstacle.x + 3, obstacle.y + 3, obstacle.width - 6, 15);
+                
+                // Car wheels
+                this.ctx.fillStyle = '#000000';
+                this.ctx.beginPath();
+                this.ctx.arc(obstacle.x + 6, obstacle.y + obstacle.height - 5, 4, 0, Math.PI * 2);
+                this.ctx.arc(obstacle.x + obstacle.width - 6, obstacle.y + obstacle.height - 5, 4, 0, Math.PI * 2);
+                this.ctx.fill();
+            } else if (obstacle.type === 'truck') {
+                // Truck cab
+                this.ctx.fillStyle = '#DC2626';
+                this.ctx.fillRect(obstacle.x + 2, obstacle.y + obstacle.height - 30, obstacle.width - 4, 25);
+                
+                // Truck wheels
+                this.ctx.fillStyle = '#000000';
+                this.ctx.beginPath();
+                this.ctx.arc(obstacle.x + 6, obstacle.y + obstacle.height - 5, 5, 0, Math.PI * 2);
+                this.ctx.arc(obstacle.x + obstacle.width - 6, obstacle.y + obstacle.height - 5, 5, 0, Math.PI * 2);
+                this.ctx.fill();
+            } else if (obstacle.type === 'construction') {
+                // Construction cone pattern
+                this.ctx.fillStyle = '#FFFFFF';
+                this.ctx.fillRect(obstacle.x + 5, obstacle.y + 10, obstacle.width - 10, 3);
+                this.ctx.fillRect(obstacle.x + 5, obstacle.y + 20, obstacle.width - 10, 3);
+                this.ctx.fillRect(obstacle.x + 5, obstacle.y + 30, obstacle.width - 10, 3);
+            }
+        }
     }
 
     drawTrafficLight() {
@@ -394,10 +631,19 @@ class TrafficLightRacer {
         this.distance = 0;
         this.penalties = 0;
         this.timeLeft = 60;
-        this.carSpeed = 0;
-        this.trafficLight = 'red';
+        this.carSpeed = 3; // Start with some speed
+        this.trafficLight = 'green'; // Start with green
         this.currentLightIndex = 0;
         this.lightTimer = 0;
+        this.nextLightChange = this.lightDuration();
+        
+        // Reset lane position
+        this.currentLane = 1;
+        this.targetLane = 1;
+        this.isChangingLanes = false;
+        
+        // Clear obstacles
+        this.obstacles = [];
 
         // Hide start screen
         document.getElementById('startScreen').style.display = 'none';
@@ -407,6 +653,7 @@ class TrafficLightRacer {
         document.getElementById('timer').textContent = '60';
         document.getElementById('penalties').textContent = '0';
         
+        this.updateCarPosition();
         this.updateTrafficLightHUD();
     }
 
