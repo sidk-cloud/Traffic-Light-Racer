@@ -1,8 +1,23 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UT        <!-- Start Screen -->
+        <div id="startScreen" class="absolute inset-0 z-20 bg-black bg-opacity-90 flex items-center justify-center">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-green-400 mb-4">🏁 Traffic Light Racer</h1>
+                <p class="text-xl mb-6">Drive safely and have fun for 2 minutes!</p>
+                <p class="text-lg mb-8 text-yellow-300">
+                    🟢 Green Light = Drive and have fun!<br>
+                    🟡 Yellow Light = Be careful!<br>
+                    🔴 Red Light = Slow down a little!<br>
+                    🚗 Avoid cars and trucks - change lanes!<br>
+                    ⭐ The middle lane has more obstacles!
+                </p>
+                <button id="startBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-xl transition-colors">
+                    Start Driving!
+                </button>
+            </div>
+        </div> name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Traffic Light Racer - Kids Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -28,13 +43,17 @@
     </style>
 </head>
 <body class="bg-gray-900 text-white font-mono overflow-hidden">
+    <!-- Game Container -->
     <div id="gameContainer" class="relative w-screen h-screen">
+        <!-- HUD Overlay -->
         <div id="hud" class="absolute top-0 left-0 z-10 p-4 space-y-2">
             <div class="bg-black bg-opacity-60 rounded-lg p-3">
                 <div class="text-green-400 text-xl font-bold">Distance: <span id="distance">0</span>m</div>
                 <div class="text-blue-400 text-lg">Time: <span id="timer">120</span>s</div>
                 <div class="text-yellow-400 text-lg">Score: <span id="penalties">0</span></div>
             </div>
+            
+            <!-- Traffic Light HUD -->
             <div class="bg-black bg-opacity-80 rounded-lg p-3">
                 <div class="text-center text-sm mb-2">Traffic Light</div>
                 <div id="trafficLightHUD" class="w-8 h-20 bg-gray-800 rounded-lg mx-auto relative">
@@ -44,31 +63,38 @@
                 </div>
             </div>
         </div>
+
+        <!-- Controls Info -->
         <div class="absolute top-4 right-4 z-10 bg-black bg-opacity-60 rounded-lg p-3 text-sm">
             <div class="text-center mb-2 font-bold">Controls</div>
-            <div class="text-green-400"> or W: Go Faster</div>
-            <div class="text-red-400"> or S: Slow Down</div>
-            <div class="text-blue-400">  or A D: Change Lanes</div>
+            <div class="text-green-400">↑ or W: Go Faster</div>
+            <div class="text-red-400">↓ or S: Slow Down</div>
+            <div class="text-blue-400">← → or A D: Change Lanes</div>
             <div class="text-yellow-400 mt-2">Avoid the obstacles!</div>
             <div class="text-purple-400">Have fun driving!</div>
         </div>
+
+        <!-- Game Canvas -->
         <canvas id="gameCanvas" class="block w-full h-full"></canvas>
+
+        <!-- Start Screen -->
         <div id="startScreen" class="absolute inset-0 z-20 bg-black bg-opacity-90 flex items-center justify-center">
             <div class="text-center">
-                <h1 class="text-4xl font-bold text-green-400 mb-4"> Traffic Light Racer</h1>
-                <p class="text-xl mb-6">Drive safely and have fun for 2 minutes!</p>
+                <h1 class="text-4xl font-bold text-green-400 mb-4">🏁 Traffic Light Racer</h1>
+                <p class="text-xl mb-6">Navigate 3 lanes and avoid obstacles!</p>
                 <p class="text-lg mb-8 text-yellow-300">
-                     Green Light = Drive and have fun!<br>
-                     Yellow Light = Be careful!<br>
-                     Red Light = Slow down a little!<br>
-                     Avoid cars and trucks - change lanes!<br>
-                     The middle lane has more obstacles!
+                    � Green Light = Accelerate automatically<br>
+                    🟡 Yellow Light = Slow down!<br>
+                    � Red Light = Stop or get penalties!<br>
+                    🚗 Dodge cars, trucks, and construction!
                 </p>
                 <button id="startBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-xl transition-colors">
-                    Start Driving!
+                    Start Race!
                 </button>
             </div>
         </div>
+
+        <!-- Game Over Screen -->
         <div id="gameOverScreen" class="absolute inset-0 z-20 bg-black bg-opacity-90 flex items-center justify-center hidden">
             <div class="text-center">
                 <h2 id="gameOverTitle" class="text-3xl font-bold text-red-400 mb-4">Game Over!</h2>
@@ -82,8 +108,11 @@
                 </button>
             </div>
         </div>
+
+        <!-- Penalty Flash -->
         <div id="penaltyFlash" class="absolute inset-0 pointer-events-none z-15 hidden"></div>
     </div>
+
     <script src="js/game.js"></script>
 </body>
 </html>
