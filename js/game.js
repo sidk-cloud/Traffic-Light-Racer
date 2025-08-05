@@ -649,7 +649,10 @@ class TrafficLightRacer {
         this.obstacles = [];
 
         // Hide start screen
-        document.getElementById('startScreen').style.display = 'none';
+        const startScreen = document.getElementById('startScreen');
+        if (startScreen) {
+            startScreen.style.display = 'none';
+        }
         
         // Update HUD
         document.getElementById('distance').textContent = '0';
