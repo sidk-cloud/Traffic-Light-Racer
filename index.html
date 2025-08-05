@@ -1,8 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-            <div class="text-center">
+                <h1 class="text-4xl font-bold text-green-400 mb-4">🏁 Traffic Light Racer</h1>
+                <p class="text-xl mb-6">Drive safely and have fun for 2 minutes!</p>
+                <p class="text-lg mb-8 text-yellow-300">
+                    🟢 Green Light = Drive and have fun!<br>
+                    🟡 Yellow Light = Be careful!<br>
+                    🔴 Red Light = Slow down a little!<br>
+                    🚗 Avoid cars and trucks - change lanes!<br>
+                    ⭐ The middle lane has more obstacles!
+                </p>
+                <button id="startBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-xl transition-colors">
+                    Start Driving!
+                </button>
+            </div>a name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Traffic Light Racer - Kids Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -34,8 +46,8 @@
         <div id="hud" class="absolute top-0 left-0 z-10 p-4 space-y-2">
             <div class="bg-black bg-opacity-60 rounded-lg p-3">
                 <div class="text-green-400 text-xl font-bold">Distance: <span id="distance">0</span>m</div>
-                <div class="text-blue-400 text-lg">Time: <span id="timer">60</span>s</div>
-                <div class="text-red-400 text-lg">Penalties: <span id="penalties">0</span>/3</div>
+                <div class="text-blue-400 text-lg">Time: <span id="timer">120</span>s</div>
+                <div class="text-yellow-400 text-lg">Score: <span id="penalties">0</span></div>
             </div>
             
             <!-- Traffic Light HUD -->
@@ -52,11 +64,11 @@
         <!-- Controls Info -->
         <div class="absolute top-4 right-4 z-10 bg-black bg-opacity-60 rounded-lg p-3 text-sm">
             <div class="text-center mb-2 font-bold">Controls</div>
-            <div class="text-green-400">↑ or W: Accelerate</div>
-            <div class="text-red-400">↓ or S: Brake</div>
+            <div class="text-green-400">↑ or W: Go Faster</div>
+            <div class="text-red-400">↓ or S: Slow Down</div>
             <div class="text-blue-400">← → or A D: Change Lanes</div>
-            <div class="text-yellow-400 mt-2">Avoid obstacles!</div>
-            <div class="text-yellow-400">Slow down on RED!</div>
+            <div class="text-yellow-400 mt-2">Avoid the obstacles!</div>
+            <div class="text-purple-400">Have fun driving!</div>
         </div>
 
         <!-- Game Canvas -->
@@ -84,12 +96,12 @@
             <div class="text-center">
                 <h2 id="gameOverTitle" class="text-3xl font-bold text-red-400 mb-4">Game Over!</h2>
                 <div class="text-xl mb-6">
-                    <div class="text-green-400 mb-2">Final Distance: <span id="finalDistance">0</span>m</div>
-                    <div class="text-red-400 mb-2">Penalties: <span id="finalPenalties">0</span></div>
+                    <div class="text-green-400 mb-2">Distance Traveled: <span id="finalDistance">0</span>m</div>
+                    <div class="text-blue-400 mb-2">Your Score: <span id="finalPenalties">0</span></div>
                     <div id="gameOverReason" class="text-yellow-300 mb-4"></div>
                 </div>
                 <button id="restartBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg text-xl transition-colors">
-                    Play Again!
+                    Drive Again!
                 </button>
             </div>
         </div>

@@ -12,18 +12,22 @@ class TrafficLightRacer {
         this.gameState = 'start'; // 'start', 'playing', 'gameOver'
         this.distance = 0;
         this.penalties = 0;
-        this.maxPenalties = 3;
-        this.timeLeft = 60;
+        this.maxPenalties = 10; // More forgiving for kids
+        this.timeLeft = 120; // 2 minutes
         this.gameSpeed = 2;
         this.carSpeed = 3; // Start with some speed
         this.maxCarSpeed = 12;
         this.autoAcceleration = 0.02; // Automatic acceleration rate
 
-        // Traffic light states
+        // Traffic light states - Kid-friendly timing
         this.trafficLight = 'green'; // Start with green
         this.lightTimer = 0;
-        this.lightDuration = () => 2000 + Math.random() * 4000; // Random 2-6 seconds
-        this.nextLightChange = this.lightDuration();
+        this.lightChangeCount = 0;
+        this.maxLightChanges = 2; // Only 2 light changes max in 2 minutes
+        this.greenDuration = 50000; // 50 seconds of green
+        this.yellowDuration = 3000; // 3 seconds yellow
+        this.redDuration = 5000; // 5 seconds red
+        this.nextLightChange = this.greenDuration;
         this.lightCycle = ['green', 'yellow', 'red'];
         this.currentLightIndex = 0;
 
@@ -51,7 +55,8 @@ class TrafficLightRacer {
 
         // Obstacles
         this.obstacles = [];
-        this.obstacleSpawnRate = 0.02; // Probability per frame
+        this.obstacleSpawnRate = 0.015; // Slightly reduced overall spawn rate
+        this.middleLaneSpawnMultiplier = 3; // 3x more obstacles in middle lane
         this.obstacleTypes = [
             { type: 'car', color: '#EF4444', width: 35, height: 55 },
             { type: 'truck', color: '#F59E0B', width: 40, height: 70 },
@@ -214,13 +219,8 @@ class TrafficLightRacer {
     }
 
     accelerate() {
-        // Only allow acceleration on green light
-        if (this.trafficLight === 'green') {
-            this.carSpeed = Math.min(this.carSpeed + 0.5, this.maxCarSpeed);
-        } else {
-            // Penalty for accelerating on red/yellow
-            this.triggerPenalty();
-        }
+        // Always allow acceleration - no penalties for kids!
+        this.carSpeed = Math.min(this.carSpeed + 0.5, this.maxCarSpeed);
     }
 
     brake() {
@@ -271,17 +271,23 @@ class TrafficLightRacer {
     updateTrafficLight(deltaTime) {
         this.lightTimer += deltaTime;
         
-        if (this.lightTimer >= this.nextLightChange) {
+        // Only change lights if we haven't exceeded max changes and there's enough time left
+        if (this.lightTimer >= this.nextLightChange && 
+            this.lightChangeCount < this.maxLightChanges && 
+            this.timeLeft > 20) { // Don't change in last 20 seconds
+            
             this.lightTimer = 0;
+            this.lightChangeCount++;
             this.currentLightIndex = (this.currentLightIndex + 1) % this.lightCycle.length;
             this.trafficLight = this.lightCycle[this.currentLightIndex];
             
-            // Set random duration for next light change
-            this.nextLightChange = this.lightDuration();
-            
-            // Check for penalty if car is speeding during red/yellow
-            if ((this.trafficLight === 'red' || this.trafficLight === 'yellow') && this.carSpeed > 2) {
-                this.triggerPenalty();
+            // Set duration for next light state
+            if (this.trafficLight === 'green') {
+                this.nextLightChange = this.greenDuration;
+            } else if (this.trafficLight === 'yellow') {
+                this.nextLightChange = this.yellowDuration;
+            } else if (this.trafficLight === 'red') {
+                this.nextLightChange = this.redDuration;
             }
             
             // Update HUD traffic light
@@ -357,22 +363,34 @@ class TrafficLightRacer {
     }
 
     spawnObstacles() {
-        if (Math.random() < this.obstacleSpawnRate) {
-            const obstacleType = this.obstacleTypes[Math.floor(Math.random() * this.obstacleTypes.length)];
-            const lane = Math.floor(Math.random() * this.numLanes);
+        // Base spawn rate
+        let spawnRate = this.obstacleSpawnRate;
+        
+        // Check each lane
+        for (let lane = 0; lane < this.numLanes; lane++) {
+            let currentSpawnRate = spawnRate;
             
-            // Don't spawn in player's current lane if they're close
-            if (Math.abs(lane - this.currentLane) < 0.5) return;
+            // Increase spawn rate for middle lane (lane 1)
+            if (lane === 1) {
+                currentSpawnRate *= this.middleLaneSpawnMultiplier;
+            }
             
-            const obstacle = {
-                ...obstacleType,
-                lane: lane,
-                x: this.getLaneCenter(lane) - obstacleType.width / 2,
-                y: -obstacleType.height,
-                speed: 1 + Math.random() * 2
-            };
-            
-            this.obstacles.push(obstacle);
+            if (Math.random() < currentSpawnRate) {
+                const obstacleType = this.obstacleTypes[Math.floor(Math.random() * this.obstacleTypes.length)];
+                
+                // Don't spawn directly on player if they're in this lane
+                if (Math.abs(lane - this.currentLane) < 0.3) continue;
+                
+                const obstacle = {
+                    ...obstacleType,
+                    lane: lane,
+                    x: this.getLaneCenter(lane) - obstacleType.width / 2,
+                    y: -obstacleType.height,
+                    speed: 1 + Math.random() * 2
+                };
+                
+                this.obstacles.push(obstacle);
+            }
         }
     }
 
@@ -416,28 +434,12 @@ class TrafficLightRacer {
     }
 
     handleCollision(obstacle) {
-        // Different penalties based on obstacle type
-        if (obstacle.type === 'construction') {
-            this.penalties += 2;
-            this.carSpeed = Math.max(this.carSpeed - 4, 0);
-        } else {
-            this.penalties += 1;
-            this.carSpeed = Math.max(this.carSpeed - 2, 0);
-        }
-
-        // Visual and audio feedback
-        this.showPenaltyFlash();
+        // Gentler penalties for kids - just slow down, no penalty points
+        this.carSpeed = Math.max(this.carSpeed - 1, 1); // Don't stop completely
+        
+        // Visual feedback (less intense)
         this.shakeCanvas();
-        this.playPenaltySound();
-
-        // Update UI
-        document.getElementById('penalties').textContent = this.penalties;
-
-        // Check game over
-        if (this.penalties >= this.maxPenalties) {
-            this.endGame('Too many collisions!');
-        }
-
+        
         // Remove the obstacle
         const index = this.obstacles.indexOf(obstacle);
         if (index > -1) {
@@ -630,12 +632,13 @@ class TrafficLightRacer {
         this.gameState = 'playing';
         this.distance = 0;
         this.penalties = 0;
-        this.timeLeft = 60;
+        this.timeLeft = 120; // 2 minutes
         this.carSpeed = 3; // Start with some speed
         this.trafficLight = 'green'; // Start with green
         this.currentLightIndex = 0;
         this.lightTimer = 0;
-        this.nextLightChange = this.lightDuration();
+        this.lightChangeCount = 0;
+        this.nextLightChange = this.greenDuration;
         
         // Reset lane position
         this.currentLane = 1;
@@ -650,7 +653,7 @@ class TrafficLightRacer {
         
         // Update HUD
         document.getElementById('distance').textContent = '0';
-        document.getElementById('timer').textContent = '60';
+        document.getElementById('timer').textContent = '120';
         document.getElementById('penalties').textContent = '0';
         
         this.updateCarPosition();
@@ -670,20 +673,18 @@ class TrafficLightRacer {
     endGame(reason) {
         this.gameState = 'gameOver';
         
-        // Update game over screen
-        document.getElementById('finalDistance').textContent = Math.floor(this.distance);
-        document.getElementById('finalPenalties').textContent = this.penalties;
-        document.getElementById('gameOverReason').textContent = reason;
+        // Calculate a fun score based on distance
+        const score = Math.floor(this.distance / 10);
         
-        // Show appropriate title
+        // Update game over screen with positive messaging
+        document.getElementById('finalDistance').textContent = Math.floor(this.distance);
+        document.getElementById('finalPenalties').textContent = score; // Show score instead of penalties
+        document.getElementById('gameOverReason').textContent = 'Great job driving!';
+        
+        // Always show positive title for kids
         const title = document.getElementById('gameOverTitle');
-        if (this.penalties >= this.maxPenalties) {
-            title.textContent = 'You Ran the Light!';
-            title.className = 'text-3xl font-bold text-red-400 mb-4';
-        } else {
-            title.textContent = 'Time\'s Up!';
-            title.className = 'text-3xl font-bold text-yellow-400 mb-4';
-        }
+        title.textContent = '🎉 Well Done Driver!';
+        title.className = 'text-3xl font-bold text-green-400 mb-4';
         
         // Show game over screen
         document.getElementById('gameOverScreen').classList.remove('hidden');
