@@ -1,0 +1,27 @@
+{
+  "name": "traffic-light-racer",
+  "version": "1.0.0",
+  "description": "A fun and educational racing game for kids that teaches traffic light awareness",
+  "main": "index.html",
+  "scripts": {
+    "serve": "python -m http.server 8000 || python3 -m http.server 8000",
+    "start": "echo 'Open index.html in your browser or run npm run serve'"
+  },
+  "keywords": [
+    "game",
+    "kids",
+    "education",
+    "traffic",
+    "racing",
+    "canvas",
+    "javascript"
+  ],
+  "author": "sidk-cloud",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sidk-cloud/Traffic-Light-Racer.git"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Light Racer - Kids Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        canvas {
+            image-rendering: pixelated;
+            cursor: crosshair;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes flash {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(255, 0, 0, 0.3); }
+        }
+        .flash {
+            animation: flash 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-mono overflow-hidden">
+    <!-- Game Container -->
+    <div id="gameContainer" class="relative w-screen h-screen">
+        <!-- HUD Overlay -->
+        <div id="hud" class="absolute top-0 left-0 z-10 p-4 space-y-2">
+            <div class="bg-black bg-opacity-60 rounded-lg p-3">
+                <div class="text-green-400 text-xl font-bold">Distance: <span id="distance">0</span>m</div>
+                <div class="text-blue-400 text-lg">Time: <span id="timer">60</span>s</div>
+                <div class="text-red-400 text-lg">Penalties: <span id="penalties">0</span>/3</div>
+            </div>
+            
+            <!-- Traffic Light HUD -->
+            <div class="bg-black bg-opacity-80 rounded-lg p-3">
+                <div class="text-center text-sm mb-2">Traffic Light</div>
+                <div id="trafficLightHUD" class="w-8 h-20 bg-gray-800 rounded-lg mx-auto relative">
+                    <div id="redLight" class="w-6 h-6 rounded-full bg-red-500 absolute top-1 left-1"></div>
+                    <div id="yellowLight" class="w-6 h-6 rounded-full bg-gray-600 absolute top-7 left-1"></div>
+                    <div id="greenLight" class="w-6 h-6 rounded-full bg-gray-600 absolute top-13 left-1"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Info -->
+        <div class="absolute top-4 right-4 z-10 bg-black bg-opacity-60 rounded-lg p-3 text-sm">
+            <div class="text-center mb-2 font-bold">Controls</div>
+            <div class="text-green-400">↑ or W: Accelerate</div>
+            <div class="text-yellow-400">Only move on GREEN!</div>
+        </div>
+
+        <!-- Game Canvas -->
+        <canvas id="gameCanvas" class="block w-full h-full"></canvas>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="absolute inset-0 z-20 bg-black bg-opacity-90 flex items-center justify-center">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-green-400 mb-4">🏁 Traffic Light Racer</h1>
+                <p class="text-xl mb-6">Race when the light is GREEN!</p>
+                <p class="text-lg mb-8 text-yellow-300">
+                    🔴 Red Light = STOP!<br>
+                    🟡 Yellow Light = STOP!<br>
+                    🟢 Green Light = GO!
+                </p>
+                <button id="startBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-xl transition-colors">
+                    Start Race!
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="absolute inset-0 z-20 bg-black bg-opacity-90 flex items-center justify-center hidden">
+            <div class="text-center">
+                <h2 id="gameOverTitle" class="text-3xl font-bold text-red-400 mb-4">Game Over!</h2>
+                <div class="text-xl mb-6">
+                    <div class="text-green-400 mb-2">Final Distance: <span id="finalDistance">0</span>m</div>
+                    <div class="text-red-400 mb-2">Penalties: <span id="finalPenalties">0</span></div>
+                    <div id="gameOverReason" class="text-yellow-300 mb-4"></div>
+                </div>
+                <button id="restartBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg text-xl transition-colors">
+                    Play Again!
+                </button>
+            </div>
+        </div>
+
+        <!-- Penalty Flash -->
+        <div id="penaltyFlash" class="absolute inset-0 pointer-events-none z-15 hidden"></div>
+    </div>
+
+    <script src="js/game.js"></script>
+</body>
+</html>
