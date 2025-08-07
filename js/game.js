@@ -15,9 +15,9 @@ class TrafficLightRacer {
         this.maxPenalties = 10; // More forgiving for kids
         this.timeLeft = 120; // 2 minutes
         this.gameSpeed = 2;
-        this.carSpeed = 3; // Start with some speed
-        this.maxCarSpeed = 12;
-        this.autoAcceleration = 0.02; // Automatic acceleration rate
+        this.carSpeed = 2.25; // Reduced by 25% from 3
+        this.maxCarSpeed = 9; // Reduced by 25% from 12
+        this.autoAcceleration = 0.015; // Slightly reduced automatic acceleration
 
         // Traffic light states - Kid-friendly timing
         this.trafficLight = 'green'; // Start with green
@@ -36,7 +36,7 @@ class TrafficLightRacer {
         this.laneWidth = 90;
         this.currentLane = 1; // Start in middle lane (0, 1, 2)
         this.targetLane = 1;
-        this.laneChangeSpeed = 0.15;
+        this.laneChangeSpeed = 0.25; // Increased from 0.15 for better responsiveness
         this.isChangingLanes = false;
 
         // Car properties
@@ -208,7 +208,7 @@ class TrafficLightRacer {
     updateLanePosition() {
         if (this.isChangingLanes) {
             const diff = this.targetLane - this.currentLane;
-            if (Math.abs(diff) > 0.05) {
+            if (Math.abs(diff) > 0.02) { // Reduced threshold for smoother completion
                 this.currentLane += diff * this.laneChangeSpeed;
             } else {
                 this.currentLane = this.targetLane;
@@ -434,8 +434,8 @@ class TrafficLightRacer {
     }
 
     handleCollision(obstacle) {
-        // Gentler penalties for kids - just slow down, no penalty points
-        this.carSpeed = Math.max(this.carSpeed - 1, 1); // Don't stop completely
+        // More significant slowdown when hitting obstacles
+        this.carSpeed = Math.max(this.carSpeed - 2.5, 0.5); // Increased from -1, minimum speed 0.5
         
         // Visual feedback (less intense)
         this.shakeCanvas();
@@ -633,7 +633,7 @@ class TrafficLightRacer {
         this.distance = 0;
         this.penalties = 0;
         this.timeLeft = 120; // 2 minutes
-        this.carSpeed = 3; // Start with some speed
+        this.carSpeed = 2.25; // Start with reduced speed (25% slower)
         this.trafficLight = 'green'; // Start with green
         this.currentLightIndex = 0;
         this.lightTimer = 0;
